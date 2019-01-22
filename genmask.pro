@@ -30,7 +30,9 @@ FUNCTION GENMASK, im, err=err, hd=hd,$
                   sig=sig,$
                   chmin=chmin,$
                   grow=grow,$
-                  guard=guard
+                  guard=guard,$
+                  im_use=im_smo,$
+                  err_use=sen_smo
 ;+
 ; NAME:
 ;   GENMASK
@@ -54,6 +56,8 @@ FUNCTION GENMASK, im, err=err, hd=hd,$
 ;
 ; OUTPUTS:
 ;   MASK      signal mask cube (1 as signal, 0 as noise, nan as missing data)
+;   IM_USE    actual data cube used for SNR calculations
+;   ERR_USE   actual error cube used for SNR calculations
 ;
 ; HISTORY:
 ;
