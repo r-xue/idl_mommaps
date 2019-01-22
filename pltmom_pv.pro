@@ -1,4 +1,5 @@
-PRO PLTMOM_PV,prefix,label=label
+PRO PLTMOM_PV,prefix,label=label,cell_fill=cell_fill,vrange=vrange,$
+    pratio=pratio
 ;+
 ; NAME:
 ;   PLTMOM_PV
@@ -9,6 +10,13 @@ PRO PLTMOM_PV,prefix,label=label
 ; INPUTS:
 ;   PREFIX    -- prefix for maps
 ;                e.g.'yourpath/n4254co.gm'
+;   [pratio]  -- compress the xy panel size by this factor
+;                useful when the n-xy is significantly different from n-z
+;   [vrange]  -- choose the velocity range to be selected
+;   
+; KEYWORDS:
+; 
+;   cell_fill -- use ccontour,/cell_fill rather than cgimage
 ;
 ; OUTPUTS:
 ;   prefix.mom0pv.eps
@@ -42,12 +50,19 @@ imvy=READFITS(imvy,imvyhd,/SILENT)
 sz_xv=size(imxv,/d)
 sz_vy=size(imvy,/d)
 sz=size(im,/d)
+if  n_elements(pratio) ne 0 then begin
+    sz_xv[1]=sz[0]/float(pratio)
+    sz_vy[0]=sz[1]/float(pratio)
+endif
+
 scy=sz_xv[1]*1.0/sz[1]
 scx=sz_vy[0]*1.0/sz[0]
 
 nvels=(size(imvy))[1]
 vels=sxpar(imvyhd,'CRVAL1')+(findgen(nvels)+1-sxpar(imvyhd,'CRPIX1'))*sxpar(imvyhd,'CDELT1')
 vels=vels/1000.
+
+if  n_elements(vrange) ne 2 then vrange=[min(vels),max(vels)]
 
 szall=[sz[0]+sz_vy[0],sz[1]+sz_xv[1]]
 
@@ -76,14 +91,19 @@ device, filename=prefix+'.mom0pv.eps', $
 !x.thick = 1.5
 !y.thick = 1.5
 !z.thick = 1.5
-!p.charsize=1.0
+!p.charsize=1.2
 !p.charthick=1.5
 xyouts,'!6'
 
 ; MOM-0 (XY) PLOT 
 pos=[posxn[1],posyn[1],posxn[2],posyn[2]]
 loadct,13,/silent
-cgimage,im,pos=pos,stretch=1,/noe
+if  ~keyword_set(cell_fill) then begin
+    cgimage,im,pos=pos,stretch=1,/noe
+endif else begin
+    im[where(im ne im,/null)]=min(im,/nan)
+    cgcontour,im,/cell_fill,pos=pos,/noe,xstyle=5,ystyle=5,nlevels=20
+endelse
 
 xtitle=''
 ytitle=''
@@ -133,40 +153,84 @@ if  keyword_set(label) then begin
     if  tag_exist(label,'br') then al_legend,label.br,/bottom,/right,textcolor='yellow',box=0
 endif
 
-vinterval=ceil(abs(min(vels)-max(vels))/4.0)*1.0
-    
+;vinterval=ceil(abs(min(vels)-max(vels))/4.0)*1.0
+
 subpos_xv=[posxn[1],posyn[3],posxn[2],posyn[4]]
 
+vinterval=0
+
 loadct,13,/silent
-cgimage,imxv,pos=subpos_xv,stretch=1,/noe
+if  ~keyword_set(cell_fill) then begin 
+    cgimage,imxv,pos=subpos_xv,stretch=1,/noe
+endif else begin
+    sz=size(imxv,/dim)
+    imxv[where(imxv ne imxv,/null)]=min(imxv,/nan)
+    cgcontour,imxv,findgen(sz[0]),vels,yrange=vrange,$
+        /cell_fill,pos=subpos_xv,/noe,xstyle=5,ystyle=5,nlevels=15
+endelse
 loadct,0,/silent
 
-plot,[0,1],[min(vels),max(vels)],yrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_xv,$
-    xstyle=5,ystyle=1,yTICKINTERVAL=vinterval,$
-    ytitle='Velocity [km/s]',color=cgcolor('red')
-plot,[0,1],[min(vels),max(vels)],yrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_xv,$
-    xstyle=5,ystyle=1,yTICKINTERVAL=vinterval,$
-    ytitle='Velocity [km/s]',ticklen=0.0,ytick_get=vticks   
+
+plot,[0,1],vrange,/nodata,/noe,pos=subpos_xv,$
+    xstyle=5,ystyle=1,$
+    ytitle='Velocity [km/s]',color=cgcolor('red'),yticks=3
+
+plot,[0,1],vrange,/nodata,/noe,pos=subpos_xv,$
+    xstyle=5,ystyle=1,$
+    ytitle='Velocity [km/s]',ticklen=0.0,ytick_get=vticks,yticks=3   
+    
+;plot,[0,1],[min(vels),max(vels)],yrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_xv,$
+;    xstyle=5,ystyle=1,yTICKINTERVAL=vinterval,$
+;    ytitle='Velocity [km/s]',color=cgcolor('red')
+;plot,[0,1],[min(vels),max(vels)],yrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_xv,$
+;    xstyle=5,ystyle=1,yTICKINTERVAL=vinterval,$
+;    ytitle='Velocity [km/s]',ticklen=0.0,ytick_get=vticks    
+
 imcontour,im,imhd,nlevels=10,$
     /noe,pos=subpos_xv,/nodata,color='red',AXISCOLOR='red',ystyle=5,xtickformat='(A1)',$
     subtitle=' ',xticklen=!p.ticklen/scy,xtitle=' ',ytitle=' ',$
     xmid=xmid
+
     
 subpos_yv=[posxn[3],posyn[1],posxn[4],posyn[2]]
 
+
+vinterval=0.0
 loadct,13,/silent
-cgimage,imvy,pos=subpos_yv,stretch=1,/noe;,minvalue=0.0
+
+if  ~keyword_set(cell_fill) then begin
+    cgimage,imvy,pos=subpos_yv,stretch=1,/noe
+endif else begin
+    sz=size(imvy,/dim)
+    imvy[where(imvy ne imvy,/null)]=min(imvy,/nan)
+    cgcontour,imvy,vels,findgen(sz[1]),xrange=vrange,$
+        /cell_fill,pos=subpos_yv,/noe,xstyle=5,ystyle=5,nlevels=15
+endelse
+
 loadct,0,/silent
-plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
-    xstyle=1,ystyle=5,xticks=3,xtickinterval=vinterval,$
-    xtitle='',color=cgcolor('red'),xtickformat='(A1)'
-plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
-    xstyle=1,ystyle=5,xticks=3,xtickinterval=vinterval,$
-    xtitle='',ticklen=0.0,xtickformat='(A1)'
+plot,[min(vels),max(vels)],[0,1],/nodata,/noe,pos=subpos_yv,$
+    xstyle=1,ystyle=5,xtickinterval=vinterval,$
+    xtitle='',color=cgcolor('red'),xtickformat='(A1)',xticks=3
+plot,[min(vels),max(vels)],[0,1],/nodata,/noe,pos=subpos_yv,$
+    xstyle=1,ystyle=5,xtickinterval=vinterval,$
+    xtitle='',ticklen=0.0,xtickformat='(A1)',xticks=3
 imcontour,im,imhd,nlevels=10,$
     /noe,pos=subpos_yv,/nodata,color='red',AXISCOLOR='red',xstyle=5,ytickformat='(A1)',$
     subtitle=' ',yticklen=!p.ticklen/scx,xtitle=' ',ytitle=' ',$
     ymid=ymid
+    
+;loadct,0,/silent
+;plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
+;    xstyle=1,ystyle=5,xticks=3,xtickinterval=vinterval,$
+;    xtitle='',color=cgcolor('red'),xtickformat='(A1)'
+;plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
+;    xstyle=1,ystyle=5,xticks=3,xtickinterval=vinterval,$
+;    xtitle='',ticklen=0.0,xtickformat='(A1)'
+;imcontour,im,imhd,nlevels=10,$
+;    /noe,pos=subpos_yv,/nodata,color='red',AXISCOLOR='red',xstyle=5,ytickformat='(A1)',$
+;    subtitle=' ',yticklen=!p.ticklen/scx,xtitle=' ',ytitle=' ',$
+;    ymid=ymid
+    
 
         
 device, /close
