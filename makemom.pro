@@ -263,7 +263,7 @@ emap[where(emap eq 0.0,/null)] = !values.f_nan
 
 ; GENERATE MASKING CUBE (missing data locations are still kept in mask)
 mask = GENMASK(data,err=ecube,hd=hd,spar=smopar,sig=thresh,chmin=chmin,$
-       grow=edge,guard=guard)
+       grow=edge,guard=guard,im_use=im_use,unc_use=unc_use)
 mask = mask*exmask
 
 ; MASK HIGH NOISE AT EDGES
@@ -323,6 +323,14 @@ nan_tag=where(data ne data,nan_ct)
 if nan_ct ne 0 then mask[nan_tag]=!values.f_nan
 if total(finite(mask)) ge 1 then $
     WRITEFITS,baseroot+'.mask.fits',float(mask),mhd,/compress
+
+im_use_hd=mhd
+SXADDPAR,im_use_hd,'DATAMAX',max(im_use,/nan), before='HISTORY'
+SXADDPAR,im_use_hd,'DATAMIN',min(im_use,/nan), before='HISTORY'
+WRITEFITS,baseroot+'.im_use.fits',float(im_use),im_use_hd,/compress
+SXADDPAR,im_use_hd,'DATAMAX',max(unc_use,/nan), before='HISTORY'
+SXADDPAR,im_use_hd,'DATAMIN',min(unc_use,/nan), before='HISTORY'
+WRITEFITS,baseroot+'.unc_use.fits',float(unc_use),im_use_hd,/compress
 
 ; OUTPUT MASKED FLUX SPECTRUM WITH FORMAL AND CONSERVATIVE ERRORS
 if strpos(strupcase(sxpar(mhd,'BUNIT')),'JY/B') ne -1 then begin

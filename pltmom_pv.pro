@@ -60,7 +60,7 @@ scx=sz_vy[0]*1.0/sz[0]
 
 nvels=(size(imvy))[1]
 vels=sxpar(imvyhd,'CRVAL1')+(findgen(nvels)+1-sxpar(imvyhd,'CRPIX1'))*sxpar(imvyhd,'CDELT1')
-vels=vels/1000.
+vels=vels/1000.     ;  could be km/s or kHz
 
 if  n_elements(vrange) ne 2 then vrange=[min(vels),max(vels)]
 
@@ -171,11 +171,11 @@ endelse
 loadct,0,/silent
 
 
-plot,[0,1],vrange,/nodata,/noe,pos=subpos_xv,$
+plot,[0,1],vrange,yrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_xv,$
     xstyle=5,ystyle=1,$
     ytitle='Velocity [km/s]',color=cgcolor('red'),yticks=3
 
-plot,[0,1],vrange,/nodata,/noe,pos=subpos_xv,$
+plot,[0,1],vrange,yrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_xv,$
     xstyle=5,ystyle=1,$
     ytitle='Velocity [km/s]',ticklen=0.0,ytick_get=vticks,yticks=3   
     
@@ -208,28 +208,23 @@ endif else begin
 endelse
 
 loadct,0,/silent
-plot,[min(vels),max(vels)],[0,1],/nodata,/noe,pos=subpos_yv,$
+plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
     xstyle=1,ystyle=5,xtickinterval=vinterval,$
     xtitle='',color=cgcolor('red'),xtickformat='(A1)',xticks=3
-plot,[min(vels),max(vels)],[0,1],/nodata,/noe,pos=subpos_yv,$
+plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
     xstyle=1,ystyle=5,xtickinterval=vinterval,$
     xtitle='',ticklen=0.0,xtickformat='(A1)',xticks=3
 imcontour,im,imhd,nlevels=10,$
     /noe,pos=subpos_yv,/nodata,color='red',AXISCOLOR='red',xstyle=5,ytickformat='(A1)',$
     subtitle=' ',yticklen=!p.ticklen/scx,xtitle=' ',ytitle=' ',$
     ymid=ymid
-    
-;loadct,0,/silent
+
 ;plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
 ;    xstyle=1,ystyle=5,xticks=3,xtickinterval=vinterval,$
 ;    xtitle='',color=cgcolor('red'),xtickformat='(A1)'
 ;plot,[min(vels),max(vels)],[0,1],xrange=[vels[0],vels[-1]],/nodata,/noe,pos=subpos_yv,$
 ;    xstyle=1,ystyle=5,xticks=3,xtickinterval=vinterval,$
 ;    xtitle='',ticklen=0.0,xtickformat='(A1)'
-;imcontour,im,imhd,nlevels=10,$
-;    /noe,pos=subpos_yv,/nodata,color='red',AXISCOLOR='red',xstyle=5,ytickformat='(A1)',$
-;    subtitle=' ',yticklen=!p.ticklen/scx,xtitle=' ',ytitle=' ',$
-;    ymid=ymid
     
 
         

@@ -32,7 +32,7 @@ FUNCTION GENMASK, im, err=err, hd=hd,$
                   grow=grow,$
                   guard=guard,$
                   im_use=im_smo,$
-                  err_use=sen_smo
+                  unc_use=sen_smo
 ;+
 ; NAME:
 ;   GENMASK
